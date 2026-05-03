@@ -1,5 +1,5 @@
 pipeline {
-  agent { label 'ansible-agent' }
+  agent any
 
   options {
     timestamps()
@@ -60,9 +60,29 @@ chmod -R 775 storage bootstrap/cache || true
           sh '''#!/usr/bin/env bash
 set -euo pipefail
 
-export ANSIBLE_HOST_KEY_CHECKING=False
-ansible-playbook -i ansible/inventory.ini ansible/deploy.yml \
-  --extra-vars "deploy_host=${DEPLOY_HOST} deploy_path=${DEPLOY_PATH}"
+target="${DEPLOY_HOST}:/${DEPLOY_PATH}"
+src="."
+
+echo "Deploying to ${target}..."
+
+# Ensure remote directories exist
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null deploy@${DEPLOY_HOST} "
+  mkdir -p ${DEPLOY_PATH}
+  mkdir -p ${DEPLOY_PATH}/storage/logs
+  mkdir -p ${DEPLOY_PATH}/bootstrap/cache
+" || true
+
+# Sync project files
+rsync -avz --delete \
+  --exclude='.git' \
+  --exclude='node_modules' \
+  --exclude='storage/logs' \
+  --exclude='.env' \
+  --exclude='vendor' \
+  -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+  ${src}/ deploy@${target}/
+
+echo "Deployment completed!"
 '''
         }
       }

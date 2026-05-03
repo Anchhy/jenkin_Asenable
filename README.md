@@ -82,9 +82,73 @@ Add these to Jenkins (Manage Jenkins > System > Credentials):
 ## Deployment target
 
 - Host: `178.128.93.188`
+- Deploy user: `deploy`
 - Path: `/et_anchhy`
 
-If the Laravel app on the server needs a permanent `.env`, create it once on the target server before running the pipeline.
+### Server Setup
+
+Run the provided setup script on the target server as root:
+
+```bash
+# Copy and run on 178.128.93.188 as root
+bash /tmp/setup-deploy.sh
+```
+
+Or manually:
+
+```bash
+# Create deploy user
+useradd -m -s /bin/bash deploy
+
+# Create deployment directory
+mkdir -p /et_anchhy
+chown deploy:deploy /et_anchhy
+
+# Create .ssh for SSH key authentication
+mkdir -p /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh
+chown deploy:deploy /home/deploy/.ssh
+
+# Create authorized_keys file
+touch /home/deploy/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+chown deploy:deploy /home/deploy/.ssh/authorized_keys
+```
+
+Then add your SSH public key to `/home/deploy/.ssh/authorized_keys`.
+
+### SSH Key Setup
+
+Generate an SSH key pair on your local machine or Jenkins host:
+
+```bash
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/deploy_key -N ""
+cat ~/.ssh/deploy_key.pub
+```
+
+Add the public key to the server:
+
+```bash
+ssh root@178.128.93.188
+echo "YOUR_PUBLIC_KEY_HERE" >> /home/deploy/.ssh/authorized_keys
+exit
+```
+
+Test the connection:
+
+```bash
+ssh -i ~/.ssh/deploy_key deploy@178.128.93.188
+```
+
+### Add SSH Credentials to Jenkins
+
+1. Go to **Manage Jenkins > Credentials > System > Global Credentials**
+2. Click **Add Credentials**
+3. Kind: **SSH Username with private key**
+4. ID: `deploy-ssh-key`
+5. Username: `deploy`
+6. Add Private Key: Paste the content of `~/.ssh/deploy_key`
+7. Save
 
 ## Build commands used
 
