@@ -10,7 +10,7 @@ services:
       - jenkins_home:/var/jenkins_home
       - ./init.groovy:/var/jenkins_home/init.groovy.d/01-create-agent.groovy
     environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false -Dhudson.security.csrf.GlobalCrumbIssuerConfiguration.DISABLE_CSRF_PROTECTION=true"
 
   ansible-agent:
     build:
