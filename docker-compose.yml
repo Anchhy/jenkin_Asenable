@@ -1,0 +1,31 @@
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins-controller
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ./init.groovy:/var/jenkins_home/init.groovy.d/01-create-agent.groovy
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+
+  ansible-agent:
+    build:
+      context: ./agent
+    container_name: jenkins-ansible-agent
+    restart: unless-stopped
+    profiles:
+      - agent
+    environment:
+      JENKINS_URL: "http://jenkins:8080"
+      JENKINS_AGENT_NAME: "ansible-agent"
+      JENKINS_SECRET: "17de097862268ffaacf3e02b634966fea35c332512c71231c364171bca499d44"
+      JENKINS_AGENT_WORKDIR: "/home/jenkins/agent"
+    depends_on:
+      - jenkins
+
+volumes:
+  jenkins_home:

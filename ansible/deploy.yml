@@ -1,0 +1,46 @@
+---
+- name: Deploy Laravel application
+  hosts: laravel
+  become: true
+  vars:
+    app_path: "{{ deploy_path | default('/et_anchhy') }}"
+    workspace_root: "{{ lookup('env', 'WORKSPACE') | default(playbook_dir ~ '/../', true) }}"
+
+  tasks:
+    - name: Ensure application directory exists
+      ansible.builtin.file:
+        path: "{{ app_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Sync project files to server
+      ansible.posix.synchronize:
+        src: "{{ workspace_root }}/"
+        dest: "{{ app_path }}/"
+        delete: false
+        recursive: true
+        rsync_opts:
+          - "--exclude=.git/"
+          - "--exclude=.gitignore"
+          - "--exclude=node_modules/"
+          - "--exclude=storage/logs/"
+          - "--exclude=.env"
+      delegate_to: localhost
+
+    - name: Ensure Laravel writable directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        recurse: true
+        mode: '0775'
+      loop:
+        - "{{ app_path }}/storage"
+        - "{{ app_path }}/bootstrap/cache"
+
+    - name: Run Laravel optimize clear on server
+      ansible.builtin.shell: |
+        set -e
+        cd "{{ app_path }}"
+        php artisan optimize:clear
+      args:
+        executable: /bin/bash
