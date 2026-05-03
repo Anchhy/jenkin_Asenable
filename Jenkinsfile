@@ -9,7 +9,7 @@ pipeline {
 
   environment {
     DEPLOY_HOST = '178.128.93.188'
-    DEPLOY_PATH = '/et_anchhy'
+    DEPLOY_PATH = '/var/www'
     ANSIBLE_CONFIG = 'ansible/ansible.cfg'
     ANSIBLE_HOST_KEY_CHECKING = 'False'
     TELEGRAM_API_URL = 'https://api.telegram.org'
