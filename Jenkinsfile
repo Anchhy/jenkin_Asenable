@@ -60,29 +60,17 @@ chmod -R 775 storage bootstrap/cache || true
           sh '''#!/usr/bin/env bash
 set -euo pipefail
 
-target="${DEPLOY_HOST}:/${DEPLOY_PATH}"
-src="."
+echo "Deploying Laravel app to ${DEPLOY_HOST}:${DEPLOY_PATH} using Ansible..."
 
-echo "Deploying to ${target}..."
+# Run Ansible playbook
+ANSIBLE_HOST_KEY_CHECKING=${ANSIBLE_HOST_KEY_CHECKING} \
+ansible-playbook \
+  -i ansible/inventory.ini \
+  -e "deploy_path=${DEPLOY_PATH}" \
+  -e "ansible_ssh_private_key_file=${HOME}/.ssh/deploy_key" \
+  ansible/deploy.yml
 
-# Ensure remote directories exist
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null deploy@${DEPLOY_HOST} "
-  mkdir -p ${DEPLOY_PATH}
-  mkdir -p ${DEPLOY_PATH}/storage/logs
-  mkdir -p ${DEPLOY_PATH}/bootstrap/cache
-" || true
-
-# Sync project files
-rsync -avz --delete \
-  --exclude='.git' \
-  --exclude='node_modules' \
-  --exclude='storage/logs' \
-  --exclude='.env' \
-  --exclude='vendor' \
-  -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-  ${src}/ deploy@${target}/
-
-echo "Deployment completed!"
+echo "✅ Ansible deployment completed!"
 '''
         }
       }
